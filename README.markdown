@@ -1,5 +1,21 @@
 # SiK - Firmware for SiLabs Si1000 ISM radios
 
+## Why did I need my own fork?
+
+My idea was, to use pairs of the 3DR radios as serial links between a [Colorado Time Systems (CTS)](http://www.coloradotime.com) [System 6 (timing system for swimming)](http://www.coloradotime.com/category/system-6/) and the other pieces of the puzzle. This system kept the Baud rates rather low at 9600. But it uses somewhat strange parity setups for todays practice:-(
+
+From all my internet reseach, I found that it uses (I'll have to confirm that!):
+ - 9600 8-O(dd)-1 for the communication with the meet computer.
+ - 9600 8-E(ven)-1 one way to talk to the score board.
+
+The current code deals with the parity bits on both wired segments but leaves the RF segment to just transmit 8-bits and do it's own error corrections. I know, that's not completely correct, but I hope, this will be good enough?!
+
+ - Today, most connections don't use the extra parity bits. 8N1 is the most common transmission scheme and the only one originally supported by this firmware.
+ - The cables will be much shorter and not as much in the hostile pool environment.
+ - It still has to be tested;-)
+
+## Now back to the original;-)
+
 For user documentation please see this site:
 
  http://planner.ardupilot.com/wiki/other-project-and-common-topics/common-optional-hardware/common-telemetry-landingpage/common-3dr-radio-version-2/

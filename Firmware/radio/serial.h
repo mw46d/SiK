@@ -45,7 +45,7 @@
 ///				to serial_device_set_speed at the appropriate
 ///				point during initialisation.
 ///
-extern void	serial_init(register uint8_t speed);
+extern void	serial_init(register uint8_t speed, register uint8_t parity);
 
 /// check if a serial speed is valid
 ///

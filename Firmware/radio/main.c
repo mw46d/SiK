@@ -69,8 +69,16 @@ extern void    T3_ISR(void)            __interrupt(INTERRUPT_TIMER3);
 
 //@}
 
-__code const char g_banner_string[] = "SiK " stringify(APP_VERSION_HIGH) "." stringify(APP_VERSION_LOW) " on " BOARD_NAME;
-__code const char g_version_string[] = stringify(APP_VERSION_HIGH) "." stringify(APP_VERSION_LOW);
+__code const char g_banner_string[] = "SiK " stringify(APP_VERSION_HIGH) "." stringify(APP_VERSION_LOW)
+#if defined(APP_VERSION_HACK)
+	"." stringify(APP_VERSION_HACK)
+#endif
+	" on " BOARD_NAME;
+__code const char g_version_string[] = stringify(APP_VERSION_HIGH) "." stringify(APP_VERSION_LOW)
+#if defined(APP_VERSION_HACK)
+	"." stringify(APP_VERSION_HACK)
+#endif
+	;
 
 __pdata enum BoardFrequency	g_board_frequency;	///< board info from the bootloader
 __pdata uint8_t			g_board_bl_version;	///< from the bootloader
@@ -207,7 +215,7 @@ hardware_init(void)
 	timer_init();
 
 	// UART - set the configured speed
-	serial_init(param_get(PARAM_SERIAL_SPEED));
+	serial_init(param_get(PARAM_SERIAL_SPEED), param_get(PARAM_PARITY));
 
 	// set all interrupts to the same priority level
 	IP = 0;

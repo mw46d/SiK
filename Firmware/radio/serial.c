@@ -54,6 +54,9 @@ static volatile __pdata uint16_t				tx_insert, tx_remove;
 // count of number of bytes we are allowed to send due to a RTS low reading
 static uint8_t rts_count;
 
+// fake parity
+static uint8_t fake_parity = 0;
+
 // flag indicating the transmitter is idle
 static volatile bool			tx_idle;
 
@@ -105,6 +108,7 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 	if (RI0) {
 		// acknowledge interrupt and fetch the byte immediately
 		RI0 = 0;
+		// XXX: fake_parity - we ignore the incoming parity bit.
 		c = SBUF0;
 
 		// if AT mode is active, the AT processor owns the byte
@@ -157,6 +161,18 @@ serial_interrupt(void) __interrupt(INTERRUPT_UART0)
 #endif
 			// fetch and send a byte
 			BUF_REMOVE(tx, c);
+			if (fake_parity > 0) {
+					// fake_parity - calculate the parity bit
+				register uint8_t p = 0;
+				register uint8_t i;
+
+				for (i = 0; i < 8; i++) {
+					p += (c >> i) & 0x01;
+				}
+
+				TB80 = (p + fake_parity) % 2;
+			}
+
 			SBUF0 = c;
 		} else {
 			// note that the transmitter requires a kick to restart it
@@ -177,8 +193,9 @@ serial_check_rts(void)
 }
 
 void
-serial_init(register uint8_t speed)
+serial_init(register uint8_t speed, register uint8_t parity)
 {
+	uint8_t scon0 = 0x10;
 	// disable UART interrupts
 	ES0 = 0;
 
@@ -196,7 +213,13 @@ serial_init(register uint8_t speed)
 	TR1	= 1;				// timer on
 
 	// configure the serial port
-	SCON0	= 0x10;				// enable receiver, clear interrupts
+
+	if (parity > 0 && parity < 3) {
+		scon0 |= 0x80;			// Enable 9-bit UART with Variable Baud Rate.
+		fake_parity = parity;
+	}
+
+	SCON0	= scon0;			// enable receiver, clear interrupts
 
 #ifdef SERIAL_CTS
 	// setting SERIAL_CTS low tells the other end that we have

@@ -65,7 +65,8 @@ __code const struct parameter_info {
 	{"LBT_RSSI",		0},
 	{"MANCHESTER",		0},
 	{"RTSCTS",		0},
-	{"MAX_WINDOW",		131}
+	{"MAX_WINDOW",		131},
+	{"PARITY",		0}
 };
 
 /// In-RAM parameter store.
@@ -127,7 +128,12 @@ param_check(__pdata enum ParamID id, __data uint32_t val)
 		if (val > 131)
 			return false;
 		break;
-				
+
+	case PARAM_PARITY:
+		if (val > 2)
+			return false;
+		break;
+
 	default:
 		// no sanity check for this value
 		break;
@@ -146,7 +152,7 @@ param_set(__data enum ParamID param, __pdata param_t value)
 	switch (param) {
 	case PARAM_TXPOWER:
 		// useful to update power level immediately when range
-		// testing in RSSI mode		
+		// testing in RSSI mode
 		radio_set_transmit_power(value);
 		value = radio_get_transmit_power();
 		break;
@@ -203,7 +209,7 @@ __critical {
 	__pdata uint8_t		d;
 	__pdata uint8_t		i;
 	__pdata uint8_t		sum;
-	__pdata uint8_t         count;
+	__pdata uint8_t		count;
 
 	// start with defaults
 	for (i = 0; i < sizeof(parameter_values); i++) {

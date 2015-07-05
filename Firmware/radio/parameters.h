@@ -62,6 +62,12 @@ enum ParamID {
 	PARAM_MANCHESTER,		// enable manchester encoding
 	PARAM_RTSCTS,			// enable hardware flow control
 	PARAM_MAX_WINDOW,		// The maximum window size allowed
+	PARAM_PARITY,			// MW additional parity bit on the wired link
+					// default 0 - no parity
+					// 1 - odd parity
+					// 2 - even parity
+					// That parity bit is currently NOT transmitted over the air!
+					// I just need to handle the incoming/outgoing links.
 	PARAM_MAX			// must be last
 };
 

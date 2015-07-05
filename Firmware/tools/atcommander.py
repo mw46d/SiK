@@ -50,12 +50,14 @@ class ATCommandSet(object):
     PARAM_LBT_RSSI	= 12
     PARAM_MANCHESTER	= 13
     PARAM_RTSCTS	= 14
+    PARAM_MAX_WINDOW    = 15
+    PARAM_PARITY        = 16
     
     ### Internals ###
     
     # Create object and immediate attempt to connect to radio
     def __init__(self, device, baudrate=57600, debug=False,
-                 dsrdtr=False, rtscts=False, xonxoff=False):
+                 dsrdtr=False, rtscts=False, xonxoff=False, parity=serial.PARITY_NONE):
         # Initialize object data members
         self.is_command = False		# Track if we've entered command mode
         self.is_remote = False		# Track if operating on remote radio
@@ -68,7 +70,7 @@ class ATCommandSet(object):
         # Initialize the serial connection
         # Note: we pass the buck on raised exceptions
         self.port = serial.Serial(device, baudrate=baudrate, timeout=0, 
-                                  dsrdtr=dsrdtr, rtscts=rtscts, xonxoff=xonxoff)
+                                  dsrdtr=dsrdtr, rtscts=rtscts, xonxoff=xonxoff, parity=parity)
         self.ser = fdpexpect.fdspawn(self.port.fileno(), logfile=logfile)
     
     # Send raw text to radio
@@ -191,11 +193,17 @@ class ATCommandSet(object):
     
     # Return a multi-line string containing all parameters, for display
     def get_params_text(self):
-        res = self.__query(ATCommandSet.AT_SHOW_PARAM, ['(S0:.*S14:.*)\r\n'])
+        res = self.__query(ATCommandSet.AT_SHOW_PARAM, ['(S0:.*S16:.*)\r\n'])
         if res:
             return res.group(0)
         else:
-            return "** Could not access parameters **"
+            # Try that again with the shorter list from the default firmware
+            # I could not find a way to handle the new S16 optionally:-(
+            res = self.__query(ATCommandSet.AT_SHOW_PARAM, ['(S0:.*S15:.*)\r\n'])
+            if res:
+                return res.group(0)
+            else:
+                return "** Could not access parameters **"
     
     ### Parameters (settings) access ###
     
@@ -238,13 +246,15 @@ if __name__ == '__main__':
                   'duty' : ATCommandSet.PARAM_DUTY_CYCLE, 
                   'lbtrssi' : ATCommandSet.PARAM_LBT_RSSI, 
                   'manchester' : ATCommandSet.PARAM_MANCHESTER, 
-                  'rtscts' : ATCommandSet.PARAM_RTSCTS }
+                  'rtscts' : ATCommandSet.PARAM_RTSCTS,
+                  'parity' : ATCommandSet.PARAM_PARITY }
     
     # Grok arguments
     parser = argparse.ArgumentParser(description='Change settings on local and remote radio.',
                                      epilog="Settable parameters (can use multiple --set-*): %s" % \
                                             " ".join(sorted(param_map.keys())))
     parser.add_argument("--baudrate", type=int, default=57600, help='connect at baud rate')
+    parser.add_argument("--parity", type=int, default=0, help='connect parity 0 - None, 1 - Odd, 2 - Even')
     parser.add_argument("--rtscts", action='store_true', default=False, help='connect using rtscts')
     parser.add_argument("--dsrdtr", action='store_true', default=False, help='connect using dsrdtr')
     parser.add_argument("--xonxoff", action='store_true', default=False, help='connect using xonxoff')
@@ -298,10 +308,16 @@ if __name__ == '__main__':
     if args.set_both:
         local_set = _parse_set(args.set_both, local_set)
         remote_set = _parse_set(args.set_both, remote_set)
+
+    parity = serial.PARITY_NONE
+    if args.parity == 1:
+        parity = serial.PARITY_ODD
+    elif args.parity == 2:
+        parity = serial.PARITY_EVEN
     
     # Initialize the serial connection
     at = ATCommandSet(args.device, baudrate=args.baudrate, dsrdtr=args.dsrdtr,
-                      rtscts=args.rtscts, xonxoff=args.xonxoff, debug=args.debug)
+                      rtscts=args.rtscts, xonxoff=args.xonxoff, debug=args.debug, parity=parity)
     
     # In case the radio was left in command mode, we can force it out
     # (Could just not "enter" command mode, but this seems safer somehow)
