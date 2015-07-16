@@ -180,8 +180,11 @@ class ATCommandSet(object):
     ### Get general info ###
     
     def get_radio_version(self):
-        return self.__query_float(ATCommandSet.AT_SHOW_VER)
-    
+        val = self.__query(ATCommandSet.AT_SHOW_VER, ['(\d+\.\d+.*)\r\n'])
+        if val:
+            return val.group(1)
+        return False
+
     def get_board_type(self):
         return self.__query_int(ATCommandSet.AT_SHOW_BRD_TYPE)
     
@@ -337,7 +340,7 @@ if __name__ == '__main__':
         if not r_ver:
             print "** Could not access radio **"
         else:
-            print "radio version: %g  board type: %d  board version: %d" % \
+            print "radio version: %s  board type: %d  board version: %d" % \
                   (r_ver,
                    at.get_board_type() or -1,
                    at.get_board_version() or -1)
